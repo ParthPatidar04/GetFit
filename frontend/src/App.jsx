@@ -6,10 +6,12 @@ import Profile from "./pages/Profile.jsx";
 import Diet from "./pages/Diet.jsx";
 import Billing from "./pages/Billing.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
+import Landing from "./pages/Landing.jsx";
 
 function App() {
   return (
     <Routes>
+      <Route path="/" element={<Landing />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route
@@ -44,7 +46,7 @@ function App() {
           </ProtectedRoute>
         }
       />
-      <Route path="*" element={<Navigate to="/login" replace />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }

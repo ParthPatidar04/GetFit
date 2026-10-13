@@ -18,6 +18,7 @@ const Profile = () => {
   const [height, setHeight] = useState(user?.height || "");
   const [weight, setWeight] = useState(user?.weight || "");
   const [goal, setGoal] = useState(user?.goal || "");
+  const [dietPreference, setDietPreference] = useState(user?.dietPreference || "");
   const [avatarUrl, setAvatarUrl] = useState(user?.avatarUrl || "");
   const [showPicker, setShowPicker] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -34,7 +35,7 @@ const Profile = () => {
     setSaving(true);
     setMessage("");
     try {
-      const updated = await updateProfile({ name, bodyType, height, weight, goal });
+      const updated = await updateProfile({ name, bodyType, height, weight, goal, dietPreference });
       persistUser(updated);
       setMessage("Profile updated");
     } catch (err) {
@@ -197,6 +198,20 @@ const Profile = () => {
               <option value="lose_weight">Lose weight</option>
               <option value="gain_muscle">Gain muscle</option>
               <option value="maintain">Maintain</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm mb-1">Diet preference</label>
+            <select
+              value={dietPreference}
+              onChange={(e) => setDietPreference(e.target.value)}
+              className="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+            >
+              <option value="">Select</option>
+              <option value="vegetarian">Vegetarian</option>
+              <option value="non-vegetarian">Non-vegetarian</option>
+              <option value="eggetarian">Eggetarian</option>
             </select>
           </div>
 
