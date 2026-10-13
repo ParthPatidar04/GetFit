@@ -4,11 +4,11 @@ import DietPlan from "../models/DietPlan.js";
 // @route POST /api/diet/generate
 export const generateDietPlan = async (req, res) => {
   try {
-    const { bodyType, height, weight, goal } = req.user;
+    const { bodyType, height, weight, goal, dietPreference } = req.user;
 
-    if (!bodyType || !height || !weight || !goal) {
+    if (!bodyType || !height || !weight || !goal || !dietPreference) {
       return res.status(400).json({
-        message: "Please complete your profile (body type, height, weight, goal) first",
+        message: "Please complete your profile (body type, height, weight, goal, diet preference) first",
       });
     }
 
@@ -18,6 +18,8 @@ for a person with:
 - Height: ${height} cm
 - Weight: ${weight} kg
 - Goal: ${goal}
+
+- Diet preference: ${dietPreference} (follow this strictly: vegetarian = no meat, fish or eggs; eggetarian = vegetarian plus eggs, no meat or fish; non-vegetarian = anything allowed)
 
 Give breakfast, lunch, dinner, and 1-2 snacks. Keep it practical and Indian-diet friendly.
 Keep the response concise, use plain text with clear headings, no markdown symbols like ** or #.`;

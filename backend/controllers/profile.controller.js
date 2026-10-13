@@ -4,7 +4,7 @@ import cloudinary from "../config/cloudinary.js";
 // updates name, bodyType, height, weight, goal
 export const updateProfile = async (req, res) => {
   try {
-    const { name, bodyType, height, weight, goal } = req.body;
+    const { name, bodyType, height, weight, goal, dietPreference } = req.body;
     const user = req.user;
 
     if (name !== undefined) user.name = name;
@@ -12,6 +12,7 @@ export const updateProfile = async (req, res) => {
     if (height !== undefined) user.height = height;
     if (weight !== undefined) user.weight = weight;
     if (goal !== undefined) user.goal = goal;
+    if (dietPreference !== undefined) user.dietPreference = dietPreference;
 
     await user.save();
     res.json(user);

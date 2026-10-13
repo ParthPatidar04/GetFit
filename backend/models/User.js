@@ -13,6 +13,7 @@ const userSchema = new mongoose.Schema(
     height: { type: Number, default: null }, // cm
     weight: { type: Number, default: null }, // kg
     goal: { type: String, enum: ["lose_weight", "gain_muscle", "maintain", ""], default: "" },
+    dietPreference: { type: String, enum: ["vegetarian", "non-vegetarian", "eggetarian", ""], default: "" },
 
     theme: { type: String, enum: ["light", "dark"], default: "light" },
 
