@@ -11,7 +11,7 @@ const AvatarPicker = ({ onSelect }) => {
             key={seed}
             type="button"
             onClick={() => onSelect(url)}
-            className="rounded-full overflow-hidden border-2 border-transparent hover:border-primary-500 transition"
+            className="rounded-full overflow-hidden bg-surface2 border-2 border-transparent hover:border-accent transition"
           >
             <img src={url} alt={`Avatar ${seed}`} className="w-full h-full" />
           </button>

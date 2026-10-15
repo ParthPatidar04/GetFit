@@ -20,7 +20,7 @@ const CalendarView = ({ heatmapData }) => {
         }}
         className="!border-0 !bg-transparent !w-full"
       />
-      <p className="text-sm text-gray-500 dark:text-gray-400 mt-3">
+      <p className="text-sm text-muted mt-3">
         {selectedDate.toDateString()}: <span className="font-medium">{selectedCount}</span>{" "}
         {selectedCount === 1 ? "entry" : "entries"}
       </p>
