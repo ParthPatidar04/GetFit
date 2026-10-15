@@ -24,3 +24,8 @@ export const deleteAvatar = async () => {
   const { data } = await api.delete("/profile/avatar");
   return data;
 };
+
+export const getMe = async () => {
+  const { data } = await api.get("/auth/me");
+  return data;
+};
