@@ -7,8 +7,10 @@ import activityRoutes from "./routes/activity.routes.js";
 import profileRoutes from "./routes/profile.routes.js";
 import dietRoutes from "./routes/diet.routes.js";
 import paymentRoutes from "./routes/payment.routes.js";
+import dns from "dns";
 
 dotenv.config();
+dns.setDefaultResultOrder("ipv4first");
 connectDB();
 
 const app = express();
