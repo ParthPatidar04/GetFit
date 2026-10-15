@@ -1,24 +1,36 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
+import { Sparkles } from "lucide-react";
 import { generateDietPlan, getDietHistory } from "../services/dietService.js";
+import DietChat from "../components/DietChat.jsx";
+
+const formatDate = (iso) =>
+  new Date(iso).toLocaleDateString(undefined, {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
 
 const Diet = () => {
-  const navigate = useNavigate();
-  const [history, setHistory] = useState([]);
+  const [plans, setPlans] = useState([]);
+  const [loaded, setLoaded] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState("");
+  const [tab, setTab] = useState("plan"); // mobile/tablet only
 
-  const fetchHistory = async () => {
+  const fetchPlans = async () => {
     try {
       const data = await getDietHistory();
-      setHistory(data);
+      setPlans(data); // newest first
     } catch (err) {
       console.error("Failed to load diet history", err);
+    } finally {
+      setLoaded(true);
     }
   };
 
   useEffect(() => {
-    fetchHistory();
+    fetchPlans();
   }, []);
 
   const handleGenerate = async () => {
@@ -26,7 +38,8 @@ const Diet = () => {
     setError("");
     try {
       await generateDietPlan();
-      await fetchHistory();
+      await fetchPlans();
+      setTab("plan");
     } catch (err) {
       setError(err.response?.data?.message || "Could not generate a plan");
     } finally {
@@ -34,61 +47,98 @@ const Diet = () => {
     }
   };
 
-  return (
-    <div className="min-h-screen">
-      <nav className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-gray-200 dark:border-gray-800">
-        <h1 className="text-lg font-semibold">Diet Plan</h1>
-        <button
-          onClick={() => navigate("/dashboard")}
-          className="text-sm rounded-lg border border-gray-300 dark:border-gray-700 px-3 py-1.5"
-        >
-          Back to dashboard
-        </button>
-      </nav>
+  const [latest, ...older] = plans;
 
-      <main className="px-4 sm:px-6 py-8 max-w-lg mx-auto space-y-6">
-        <div className="rounded-xl border border-gray-200 dark:border-gray-800 p-4 sm:p-6">
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-            Get a diet suggestion based on your body type, height, weight, and goal from your profile.
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-extrabold">Diet</h1>
+          <p className="text-sm text-muted">
+            Built from your body type, goal and food preference.
           </p>
+        </div>
+        <button onClick={handleGenerate} disabled={generating} className="btn-accent">
+          <Sparkles size={16} />
+          {generating ? "Generating..." : latest ? "Generate new plan" : "Generate my plan"}
+        </button>
+      </div>
+
+      {error && (
+        <p className="text-sm text-brand">
+          {error}{" "}
+          {error.toLowerCase().includes("profile") && (
+            <Link to="/profile" className="underline font-medium">
+              Go to profile
+            </Link>
+          )}
+        </p>
+      )}
+
+      {/* tabs: only below lg, on desktop both columns show */}
+      <div className="lg:hidden flex gap-1 p-1 rounded-full bg-surface2 w-fit">
+        {[
+          { key: "plan", label: "Diet plan" },
+          { key: "assistant", label: "Assistant" },
+        ].map((t) => (
           <button
-            onClick={handleGenerate}
-            disabled={generating}
-            className="w-full rounded-lg bg-primary-600 text-white py-2 text-sm font-medium hover:bg-primary-700 disabled:opacity-60"
+            key={t.key}
+            onClick={() => setTab(t.key)}
+            className={`rounded-full px-5 py-2 text-sm font-medium transition ${
+              tab === t.key ? "bg-accent text-accent-fg" : "text-muted"
+            }`}
           >
-            {generating ? "Generating..." : "Generate my diet plan"}
+            {t.label}
           </button>
-          {error && (
-            <p className="text-sm text-red-500 mt-3">
-              {error}{" "}
-              {error.toLowerCase().includes("profile") && (
-                <button onClick={() => navigate("/profile")} className="underline">
-                  Go to profile
-                </button>
-              )}
-            </p>
+        ))}
+      </div>
+
+      <div className="grid lg:grid-cols-2 gap-6 items-start">
+        {/* plan column */}
+        <div className={`space-y-4 ${tab === "plan" ? "" : "hidden lg:block"}`}>
+          {!loaded ? (
+            <div className="card p-6 text-sm text-muted">Loading...</div>
+          ) : latest ? (
+            <div className="card p-5 sm:p-6">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs rounded-full bg-accent text-accent-fg font-semibold px-3 py-1">
+                  Latest plan
+                </span>
+                <span className="text-xs text-muted">{formatDate(latest.createdAt)}</span>
+              </div>
+              <pre className="text-sm leading-relaxed whitespace-pre-wrap font-sans">
+                {latest.suggestion}
+              </pre>
+            </div>
+          ) : (
+            <div className="card p-6 text-sm text-muted">
+              No plan yet. Complete your profile (body type, height, weight, goal and diet
+              preference), then tap "Generate my plan".
+            </div>
+          )}
+
+          {older.length > 0 && (
+            <div className="space-y-3">
+              <h2 className="text-sm font-medium text-muted">Previous plans</h2>
+              {older.map((plan) => (
+                <details key={plan._id} className="card px-5 py-4">
+                  <summary className="cursor-pointer text-sm font-medium">
+                    {formatDate(plan.createdAt)}
+                  </summary>
+                  <pre className="mt-3 text-sm leading-relaxed whitespace-pre-wrap font-sans">
+                    {plan.suggestion}
+                  </pre>
+                </details>
+              ))}
+            </div>
           )}
         </div>
 
-        {history.length > 0 && (
-          <div className="space-y-4">
-            <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">
-              Your plans
-            </h3>
-            {history.map((plan) => (
-              <div
-                key={plan._id}
-                className="rounded-xl border border-gray-200 dark:border-gray-800 p-4 sm:p-6"
-              >
-                <p className="text-xs text-gray-400 mb-2">
-                  {new Date(plan.createdAt).toLocaleString()}
-                </p>
-                <pre className="text-sm whitespace-pre-wrap font-sans">{plan.suggestion}</pre>
-              </div>
-            ))}
-          </div>
-        )}
-      </main>
+        {/* chat column */}
+        <div className={tab === "assistant" ? "" : "hidden lg:block"}>
+          <DietChat />
+        </div>
+      </div>
     </div>
   );
 };

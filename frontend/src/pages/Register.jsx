@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
+import { signInWithGoogle } from "../services/firebase.js";
 
 const Register = () => {
   const [name, setName] = useState("");
@@ -8,7 +9,8 @@ const Register = () => {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const { register } = useAuth();
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const { register, loginWithFirebase } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -25,66 +27,107 @@ const Register = () => {
     }
   };
 
+  const handleGoogleSignup = async () => {
+    setError("");
+    setGoogleLoading(true);
+    try {
+      const idToken = await signInWithGoogle();
+      await loginWithFirebase(idToken);
+      navigate("/dashboard");
+    } catch (err) {
+      console.error("Firebase Google sign-in error:", err);
+      setError("Google sign-in failed. Please try again.");
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center px-4">
+    <div className="min-h-screen flex items-center justify-center px-4 py-10">
       <div className="w-full max-w-sm">
-        <h1 className="text-2xl font-semibold mb-1">Create your account</h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
-          Start tracking your fitness journey
-        </p>
+        <Link
+          to="/"
+          className="block text-center text-xl font-extrabold tracking-tight mb-8"
+        >
+          Get<span className="text-accent-text">Fit</span>
+        </Link>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm mb-1" htmlFor="name">Name</label>
-            <input
-              id="name"
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-              className="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-            />
+        <div className="card p-6 sm:p-8">
+          <h1 className="text-2xl font-bold mb-1">Create your account</h1>
+          <p className="text-sm text-muted mb-6">Start tracking your fitness journey</p>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium mb-1.5" htmlFor="name">
+                Name
+              </label>
+              <input
+                id="name"
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                placeholder="Your name"
+                className="input"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-1.5" htmlFor="email">
+                Email
+              </label>
+              <input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                placeholder="you@example.com"
+                className="input"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-1.5" htmlFor="password">
+                Password
+              </label>
+              <input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                minLength={6}
+                placeholder="At least 6 characters"
+                className="input"
+              />
+            </div>
+
+            {error && <p className="text-sm text-brand">{error}</p>}
+
+            <button type="submit" disabled={submitting} className="btn-accent w-full">
+              {submitting ? "Creating account..." : "Sign up"}
+            </button>
+          </form>
+
+          <div className="flex items-center gap-3 my-5">
+            <div className="h-px bg-line flex-1" />
+            <span className="text-xs text-muted">or</span>
+            <div className="h-px bg-line flex-1" />
           </div>
-
-          <div>
-            <label className="block text-sm mb-1" htmlFor="email">Email</label>
-            <input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm mb-1" htmlFor="password">Password</label>
-            <input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              minLength={6}
-              className="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-            />
-          </div>
-
-          {error && <p className="text-sm text-red-500">{error}</p>}
 
           <button
-            type="submit"
-            disabled={submitting}
-            className="w-full rounded-lg bg-primary-600 text-white py-2 text-sm font-medium hover:bg-primary-700 disabled:opacity-60"
+            onClick={handleGoogleSignup}
+            disabled={googleLoading}
+            className="btn-outline w-full"
           >
-            {submitting ? "Creating account..." : "Sign up"}
+            {googleLoading ? "Signing in..." : "Continue with Google"}
           </button>
-        </form>
+        </div>
 
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">
+        <p className="text-sm text-muted text-center mt-6">
           Already have an account?{" "}
-          <Link to="/login" className="text-primary-600 hover:underline">
+          <Link to="/login" className="text-accent-text font-medium hover:underline">
             Log in
           </Link>
         </p>

@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { Check } from "lucide-react";
 import { useAuth } from "../context/AuthContext.jsx";
 import { createOrder, verifyPayment, getSubscriptionStatus } from "../services/paymentService.js";
 
+const PERKS = ["AI diet plans", "Diet assistant chat", "Progress analytics"];
+
 const Billing = () => {
   const { user, setUser } = useAuth();
-  const navigate = useNavigate();
   const [status, setStatus] = useState(user?.subscriptionStatus || "free");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -33,7 +34,7 @@ const Billing = () => {
         key: keyId,
         amount,
         currency,
-        name: "Fitness Tracker",
+        name: "GetFit",
         description: "Monthly subscription",
         order_id: orderId,
         handler: async (response) => {
@@ -51,7 +52,7 @@ const Billing = () => {
             setError("Payment verification failed. Please contact support.");
           }
         },
-        theme: { color: "#2563eb" },
+        theme: { color: "#d9ff00" },
       };
 
       const rzp = new window.Razorpay(options);
@@ -63,50 +64,50 @@ const Billing = () => {
     }
   };
 
+  const isActive = status === "active";
+
   return (
-    <div className="min-h-screen">
-      <nav className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-gray-200 dark:border-gray-800">
-        <h1 className="text-lg font-semibold">Billing</h1>
-        <button
-          onClick={() => navigate("/dashboard")}
-          className="text-sm rounded-lg border border-gray-300 dark:border-gray-700 px-3 py-1.5"
-        >
-          Back to dashboard
-        </button>
-      </nav>
+    <div className="max-w-md mx-auto space-y-6">
+      <div>
+        <h1 className="text-2xl font-extrabold">Billing</h1>
+        <p className="text-sm text-muted">Manage your subscription.</p>
+      </div>
 
-      <main className="px-4 sm:px-6 py-8 max-w-md mx-auto">
-        <div className="rounded-xl border border-gray-200 dark:border-gray-800 p-6">
-          <h2 className="text-lg font-medium mb-1">Premium plan</h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-            ₹199/month — unlimited AI diet plans and more.
-          </p>
-
-          <div className="mb-4">
-            <span
-              className={`text-xs px-2 py-1 rounded-full ${
-                status === "active"
-                  ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300"
-                  : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300"
-              }`}
-            >
-              {status === "active" ? "Active" : "Free plan"}
-            </span>
-          </div>
-
-          {status !== "active" && (
-            <button
-              onClick={handleSubscribe}
-              disabled={loading}
-              className="w-full rounded-lg bg-primary-600 text-white py-2 text-sm font-medium hover:bg-primary-700 disabled:opacity-60"
-            >
-              {loading ? "Loading..." : "Subscribe now"}
-            </button>
-          )}
-
-          {error && <p className="text-sm text-red-500 mt-3">{error}</p>}
+      <section className="card p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold">Premium plan</h2>
+          <span
+            className={`text-xs font-semibold rounded-full px-3 py-1 ${
+              isActive ? "bg-accent text-accent-fg" : "bg-surface2 text-muted"
+            }`}
+          >
+            {isActive ? "Active" : status === "expired" ? "Expired" : "Free plan"}
+          </span>
         </div>
-      </main>
+
+        <p className="text-4xl font-extrabold">
+          ₹199<span className="text-base font-medium text-muted"> / month</span>
+        </p>
+
+        <ul className="mt-5 space-y-2">
+          {PERKS.map((p) => (
+            <li key={p} className="flex items-center gap-2 text-sm">
+              <span className="grid place-items-center w-5 h-5 rounded-full bg-accent text-accent-fg">
+                <Check size={12} strokeWidth={3} />
+              </span>
+              {p}
+            </li>
+          ))}
+        </ul>
+
+        {!isActive && (
+          <button onClick={handleSubscribe} disabled={loading} className="btn-accent w-full mt-6">
+            {loading ? "Loading..." : "Subscribe now"}
+          </button>
+        )}
+
+        {error && <p className="text-sm text-brand mt-3">{error}</p>}
+      </section>
     </div>
   );
 };

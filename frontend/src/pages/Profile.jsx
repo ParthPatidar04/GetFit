@@ -1,17 +1,53 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext.jsx";
 import AvatarPicker from "../components/AvatarPicker.jsx";
 import {
+  getMe,
   updateProfile,
   uploadAvatarImage,
   setPresetAvatar,
   deleteAvatar,
 } from "../services/profileService.js";
 
+const BODY_TYPES = [
+  { value: "ectomorph", label: "Ectomorph" },
+  { value: "mesomorph", label: "Mesomorph" },
+  { value: "endomorph", label: "Endomorph" },
+];
+
+const GOALS = [
+  { value: "lose_weight", label: "Lose weight" },
+  { value: "gain_muscle", label: "Gain muscle" },
+  { value: "maintain", label: "Maintain" },
+];
+
+const DIETS = [
+  { value: "vegetarian", label: "Vegetarian" },
+  { value: "non-vegetarian", label: "Non-vegetarian" },
+  { value: "eggetarian", label: "Eggetarian" },
+];
+
+const PillGroup = ({ options, value, onChange }) => (
+  <div className="flex flex-wrap gap-2">
+    {options.map((o) => (
+      <button
+        key={o.value}
+        type="button"
+        onClick={() => onChange(o.value)}
+        className={`rounded-full px-4 py-2 text-sm font-medium border transition ${
+          value === o.value
+            ? "bg-accent text-accent-fg border-accent"
+            : "bg-surface2 border-line text-muted hover:text-fg"
+        }`}
+      >
+        {o.label}
+      </button>
+    ))}
+  </div>
+);
+
 const Profile = () => {
   const { user, setUser } = useAuth();
-  const navigate = useNavigate();
 
   const [name, setName] = useState(user?.name || "");
   const [bodyType, setBodyType] = useState(user?.bodyType || "");
@@ -22,7 +58,8 @@ const Profile = () => {
   const [avatarUrl, setAvatarUrl] = useState(user?.avatarUrl || "");
   const [showPicker, setShowPicker] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const [message, setMessage] = useState(null); // { text, ok }
 
   const persistUser = (updates) => {
     const updated = { ...user, ...updates };
@@ -30,16 +67,36 @@ const Profile = () => {
     setUser(updated);
   };
 
+  // fill the form with the saved profile from the server
+  useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        const me = await getMe();
+        setName(me.name || "");
+        setBodyType(me.bodyType || "");
+        setHeight(me.height ?? "");
+        setWeight(me.weight ?? "");
+        setGoal(me.goal || "");
+        setDietPreference(me.dietPreference || "");
+        setAvatarUrl(me.avatarUrl || "");
+        persistUser(me);
+      } catch (err) {
+        console.error("Failed to load profile", err);
+      }
+    };
+    loadProfile();
+  }, []);
+
   const handleSaveProfile = async (e) => {
     e.preventDefault();
     setSaving(true);
-    setMessage("");
+    setMessage(null);
     try {
       const updated = await updateProfile({ name, bodyType, height, weight, goal, dietPreference });
       persistUser(updated);
-      setMessage("Profile updated");
+      setMessage({ text: "Profile updated", ok: true });
     } catch (err) {
-      setMessage(err.response?.data?.message || "Update failed");
+      setMessage({ text: err.response?.data?.message || "Update failed", ok: false });
     } finally {
       setSaving(false);
     }
@@ -47,13 +104,18 @@ const Profile = () => {
 
   const handleFileChange = async (e) => {
     const file = e.target.files[0];
+    e.target.value = "";
     if (!file) return;
+    setUploading(true);
+    setMessage(null);
     try {
       const { avatarUrl: newUrl } = await uploadAvatarImage(file);
       setAvatarUrl(newUrl);
       persistUser({ avatarUrl: newUrl });
     } catch (err) {
-      setMessage(err.response?.data?.message || "Upload failed");
+      setMessage({ text: err.response?.data?.message || "Upload failed", ok: false });
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -64,7 +126,7 @@ const Profile = () => {
       persistUser({ avatarUrl: url });
       setShowPicker(false);
     } catch (err) {
-      setMessage(err.response?.data?.message || "Could not set avatar");
+      setMessage({ text: err.response?.data?.message || "Could not set avatar", ok: false });
     }
   };
 
@@ -74,158 +136,131 @@ const Profile = () => {
       setAvatarUrl("");
       persistUser({ avatarUrl: "" });
     } catch (err) {
-      setMessage(err.response?.data?.message || "Could not remove avatar");
+      setMessage({ text: err.response?.data?.message || "Could not remove avatar", ok: false });
     }
   };
 
   return (
-    <div className="min-h-screen">
-      <nav className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-gray-200 dark:border-gray-800">
-        <h1 className="text-lg font-semibold">Profile</h1>
-        <button
-          onClick={() => navigate("/dashboard")}
-          className="text-sm rounded-lg border border-gray-300 dark:border-gray-700 px-3 py-1.5"
-        >
-          Back to dashboard
-        </button>
-      </nav>
+    <div className="max-w-2xl mx-auto space-y-6">
+      <div>
+        <h1 className="text-2xl font-extrabold">Profile</h1>
+        <p className="text-sm text-muted">
+          Your details help us build a diet plan that fits you.
+        </p>
+      </div>
 
-      <main className="px-4 sm:px-6 py-8 max-w-lg mx-auto space-y-6">
-        {/* avatar section */}
-        <div className="rounded-xl border border-gray-200 dark:border-gray-800 p-4 sm:p-6">
-          <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-4">
-            Profile picture
-          </h3>
+      {/* avatar */}
+      <section className="card p-5 sm:p-6">
+        <h2 className="font-semibold mb-4">Profile picture</h2>
 
-          <div className="flex items-center gap-4 mb-4">
-            <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-              {avatarUrl ? (
-                <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
-              ) : (
-                <span className="text-xl">{name?.[0]?.toUpperCase() || "?"}</span>
-              )}
-            </div>
+        <div className="flex items-center gap-4">
+          <div className="w-20 h-20 shrink-0 rounded-full overflow-hidden bg-surface2 border border-line grid place-items-center text-2xl font-bold">
+            {avatarUrl ? (
+              <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+            ) : (
+              <span>{name?.[0]?.toUpperCase() || "?"}</span>
+            )}
+          </div>
 
-            <div className="flex flex-wrap gap-2">
-              <label className="text-sm rounded-lg border border-gray-300 dark:border-gray-700 px-3 py-1.5 cursor-pointer">
-                Upload photo
-                <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
-              </label>
+          <div className="flex flex-wrap gap-2">
+            <label className="btn-outline !py-2 cursor-pointer">
+              {uploading ? "Uploading..." : "Upload photo"}
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
+                className="hidden"
+              />
+            </label>
+            <button
+              type="button"
+              onClick={() => setShowPicker((v) => !v)}
+              className="btn-outline !py-2"
+            >
+              Choose avatar
+            </button>
+            {avatarUrl && (
               <button
                 type="button"
-                onClick={() => setShowPicker((v) => !v)}
-                className="text-sm rounded-lg border border-gray-300 dark:border-gray-700 px-3 py-1.5"
+                onClick={handleDeleteAvatar}
+                className="btn-outline !py-2 !text-brand"
               >
-                Choose avatar
+                Remove
               </button>
-              {avatarUrl && (
-                <button
-                  type="button"
-                  onClick={handleDeleteAvatar}
-                  className="text-sm rounded-lg border border-red-300 text-red-500 px-3 py-1.5"
-                >
-                  Remove
-                </button>
-              )}
-            </div>
+            )}
           </div>
-
-          {showPicker && <AvatarPicker onSelect={handlePresetSelect} />}
         </div>
 
-        {/* profile form */}
-        <form
-          onSubmit={handleSaveProfile}
-          className="rounded-xl border border-gray-200 dark:border-gray-800 p-4 sm:p-6 space-y-4"
-        >
-          <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">
-            Body details
-          </h3>
+        {showPicker && (
+          <div className="mt-5">
+            <AvatarPicker onSelect={handlePresetSelect} />
+          </div>
+        )}
+      </section>
 
+      {/* details */}
+      <form onSubmit={handleSaveProfile} className="card p-5 sm:p-6 space-y-5">
+        <h2 className="font-semibold">Body details</h2>
+
+        <div>
+          <label className="block text-sm font-medium mb-1.5">Name</label>
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="input"
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm mb-1">Name</label>
+            <label className="block text-sm font-medium mb-1.5">Height (cm)</label>
             <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+              type="number"
+              value={height}
+              onChange={(e) => setHeight(e.target.value)}
+              className="input"
             />
           </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm mb-1">Height (cm)</label>
-              <input
-                type="number"
-                value={height}
-                onChange={(e) => setHeight(e.target.value)}
-                className="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm mb-1">Weight (kg)</label>
-              <input
-                type="number"
-                value={weight}
-                onChange={(e) => setWeight(e.target.value)}
-                className="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-              />
-            </div>
-          </div>
-
           <div>
-            <label className="block text-sm mb-1">Body type</label>
-            <select
-              value={bodyType}
-              onChange={(e) => setBodyType(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-            >
-              <option value="">Select</option>
-              <option value="ectomorph">Ectomorph</option>
-              <option value="mesomorph">Mesomorph</option>
-              <option value="endomorph">Endomorph</option>
-            </select>
+            <label className="block text-sm font-medium mb-1.5">Weight (kg)</label>
+            <input
+              type="number"
+              value={weight}
+              onChange={(e) => setWeight(e.target.value)}
+              className="input"
+            />
           </div>
+        </div>
 
-          <div>
-            <label className="block text-sm mb-1">Goal</label>
-            <select
-              value={goal}
-              onChange={(e) => setGoal(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-            >
-              <option value="">Select</option>
-              <option value="lose_weight">Lose weight</option>
-              <option value="gain_muscle">Gain muscle</option>
-              <option value="maintain">Maintain</option>
-            </select>
-          </div>
+        <div>
+          <label className="block text-sm font-medium mb-1.5">Body type</label>
+          <PillGroup options={BODY_TYPES} value={bodyType} onChange={setBodyType} />
+          <p className="text-xs text-muted mt-2">
+            Ectomorph: lean, Mesomorph: athletic, Endomorph: broader build.
+          </p>
+        </div>
 
-          <div>
-            <label className="block text-sm mb-1">Diet preference</label>
-            <select
-              value={dietPreference}
-              onChange={(e) => setDietPreference(e.target.value)}
-              className="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-            >
-              <option value="">Select</option>
-              <option value="vegetarian">Vegetarian</option>
-              <option value="non-vegetarian">Non-vegetarian</option>
-              <option value="eggetarian">Eggetarian</option>
-            </select>
-          </div>
+        <div>
+          <label className="block text-sm font-medium mb-1.5">Goal</label>
+          <PillGroup options={GOALS} value={goal} onChange={setGoal} />
+        </div>
 
-          {message && <p className="text-sm text-primary-600">{message}</p>}
+        <div>
+          <label className="block text-sm font-medium mb-1.5">Diet preference</label>
+          <PillGroup options={DIETS} value={dietPreference} onChange={setDietPreference} />
+        </div>
 
-          <button
-            type="submit"
-            disabled={saving}
-            className="w-full rounded-lg bg-primary-600 text-white py-2 text-sm font-medium hover:bg-primary-700 disabled:opacity-60"
-          >
-            {saving ? "Saving..." : "Save changes"}
-          </button>
-        </form>
-      </main>
+        {message && (
+          <p className={`text-sm ${message.ok ? "text-accent-text" : "text-brand"}`}>
+            {message.text}
+          </p>
+        )}
+
+        <button type="submit" disabled={saving} className="btn-accent w-full">
+          {saving ? "Saving..." : "Save changes"}
+        </button>
+      </form>
     </div>
   );
 };

@@ -1,10 +1,11 @@
+import { useState } from "react";
 import { Link, Navigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
 
 const FEATURES = [
   {
     title: "Consistency tracker",
-    text: "A GitHub-style heatmap that shows how regular you've been over the year.",
+    text: "A GitHub-style heatmap that shows how regular you've been all year.",
   },
   {
     title: "Calendar view",
@@ -12,69 +13,99 @@ const FEATURES = [
   },
   {
     title: "Progress overview",
-    text: "Daily, weekly, monthly and yearly charts of your fitness journey.",
+    text: "Daily, weekly, monthly and yearly charts of your journey.",
   },
   {
-    title: "AI diet plans",
-    text: "Get a diet plan based on your body type, goal and food preference.",
+    title: "AI diet assistant",
+    text: "A diet plan for your body, goal and food choice, plus a chat for follow-up questions.",
   },
 ];
 
 const Landing = () => {
   const { user } = useAuth();
+  const [imgOk, setImgOk] = useState(true);
 
   // already logged in? skip the landing page
   if (user) return <Navigate to="/dashboard" replace />;
 
   return (
-    <div className="min-h-screen">
-      <nav className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-gray-200 dark:border-gray-800">
-        <h1 className="text-lg font-semibold">Fitness Tracker</h1>
-        <div className="flex items-center gap-3">
-          <Link
-            to="/login"
-            className="text-sm rounded-lg border border-gray-300 dark:border-gray-700 px-3 py-1.5"
-          >
+    <div className="min-h-screen bg-bg">
+      <header className="max-w-6xl mx-auto flex items-center justify-between px-4 sm:px-6 py-5">
+        <Link to="/" className="text-xl font-extrabold tracking-tight">
+          Get<span className="text-accent-text">Fit</span>
+        </Link>
+        <div className="flex items-center gap-2">
+          <Link to="/login" className="btn-outline !py-2">
             Log in
           </Link>
-          <Link
-            to="/register"
-            className="text-sm rounded-lg bg-primary-600 text-white px-3 py-1.5 hover:bg-primary-700"
-          >
+          <Link to="/register" className="btn-accent !py-2">
             Sign up
           </Link>
         </div>
-      </nav>
+      </header>
 
-      <main className="px-4 sm:px-6 max-w-4xl mx-auto">
-        <section className="py-12 sm:py-20 text-center">
-          <h2 className="text-3xl sm:text-4xl font-semibold mb-4">
-            Build a fitness habit that sticks
-          </h2>
-          <p className="text-gray-500 dark:text-gray-400 max-w-xl mx-auto mb-8">
-            Log your workouts, see your consistency, and get a diet plan that
-            matches your body and food choices.
-          </p>
-          <Link
-            to="/register"
-            className="inline-block rounded-lg bg-primary-600 text-white px-5 py-2.5 text-sm font-medium hover:bg-primary-700"
-          >
-            Get started
-          </Link>
+      <main className="max-w-6xl mx-auto px-4 sm:px-6">
+        <section className="grid md:grid-cols-2 gap-10 items-center py-10 md:py-20">
+          <div>
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-[1.05] tracking-tight">
+              Transform Your Body,{" "}
+              <span className="text-accent-text">Transform Your Life</span>
+            </h1>
+            <p className="mt-5 text-muted max-w-md">
+              Log your workouts, watch your consistency grow, and get a diet plan
+              that matches your body and food choices.
+            </p>
+            <Link
+              to="/register"
+              className="mt-8 inline-flex items-center gap-4 rounded-full bg-accent text-accent-fg pl-7 pr-2 py-2 font-semibold"
+            >
+              Get Started
+              <span className="grid place-items-center w-11 h-11 rounded-full bg-black text-accent text-lg">
+                →
+              </span>
+            </Link>
+          </div>
+
+          {/* ring + optional hero image (put your image at public/images/hero.jpg) */}
+          <div className="relative mx-auto w-full max-w-sm aspect-square">
+            <div className="absolute inset-0 rounded-full border-[20px] border-accent" />
+            <div className="absolute inset-[20px] rounded-full overflow-hidden bg-surface2 grid place-items-center">
+              {imgOk ? (
+                <img
+                  src="/images/hero.jpg"
+                  alt=""
+                  onError={() => setImgOk(false)}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <span className="text-2xl sm:text-3xl font-extrabold text-accent-text text-center leading-tight px-6">
+                  Move.
+                  <br />
+                  Eat.
+                  <br />
+                  Repeat.
+                </span>
+              )}
+            </div>
+          </div>
         </section>
 
-        <section className="grid grid-cols-1 sm:grid-cols-2 gap-4 pb-16">
-          {FEATURES.map((f) => (
-            <div
-              key={f.title}
-              className="rounded-xl border border-gray-200 dark:border-gray-800 p-5"
-            >
-              <h3 className="font-medium mb-1">{f.title}</h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400">{f.text}</p>
+        <section className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 pb-16">
+          {FEATURES.map((f, i) => (
+            <div key={f.title} className="card p-5">
+              <span className="grid place-items-center w-9 h-9 rounded-full bg-accent text-accent-fg text-sm font-bold mb-4">
+                {i + 1}
+              </span>
+              <h3 className="font-semibold mb-1">{f.title}</h3>
+              <p className="text-sm text-muted">{f.text}</p>
             </div>
           ))}
         </section>
       </main>
+
+      <footer className="border-t border-line py-6 text-center text-xs text-muted">
+        GetFit · Your fitness, your health
+      </footer>
     </div>
   );
 };
